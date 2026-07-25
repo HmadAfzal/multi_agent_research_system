@@ -1,5 +1,5 @@
 # Research Console
-A multi-agent research pipeline with a live status tracker.
+A multi-agent research pipeline with a live status tracker. </br>
 **Live demo:** https://researchsystemmultiagent.streamlit.app/
 ## How it works
 Give it a topic and four agents run in sequence:
