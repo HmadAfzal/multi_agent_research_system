@@ -1,27 +1,38 @@
-from agents import build_reader_agent , build_search_agent , writer_chain , critic_chain
+from agents import build_reader_agent, build_search_agent, writer_chain, critic_chain
 
-def run_research_pipeline(topic : str) -> dict:
 
+def run_research_pipeline(topic: str, status_callback=None) -> dict:
+    """
+    Runs the full multi-agent research pipeline.
+
+    status_callback: optional function(step_name: str, content) -> None
+        Called after each stage completes. Used by the Streamlit UI to show
+        live progress. Terminal usage (status_callback=None) is unaffected.
+    """
     state = {}
 
-    #search agent 
-    print("\n"+" ="*50)
-    print("Searching for content ...")
-    print("="*50)
+    def notify(step_name, content):
+        if status_callback:
+            status_callback(step_name, content)
 
+    # search agent
+    print("\n" + " =" * 50)
+    print("Searching for content ...")
+    print("=" * 50)
+    notify("Searching for content", "Running search agent...")
     search_agent = build_search_agent()
     search_result = search_agent.invoke({
-        "messages" : [("user", f"Find recent, reliable and detailed information about: {topic}")]
+        "messages": [("user", f"Find recent, reliable and detailed information about: {topic}")]
     })
     state["search_results"] = search_result['messages'][-1].content
+    print("\n search result ", state['search_results'])
+    notify("Search results", state['search_results'])
 
-    print("\n search result ",state['search_results'])
-
-    #reader agent 
-    print("\n"+" ="*50)
+    # reader agent
+    print("\n" + " =" * 50)
     print("Scraping top resources ...")
-    print("="*50)
-
+    print("=" * 50)
+    notify("Scraping top resources", "Running reader agent...")
     reader_agent = build_reader_agent()
     reader_result = reader_agent.invoke({
         "messages": [("user",
@@ -30,43 +41,38 @@ def run_research_pipeline(topic : str) -> dict:
             f"Search Results:\n{state['search_results'][:800]}"
         )]
     })
-
     state['scraped_content'] = reader_result['messages'][-1].content
-
     print("\nscraped content: \n", state['scraped_content'])
+    notify("Scraped content", state['scraped_content'])
 
-    #writer chain 
-
-    print("\n"+" ="*50)
+    # writer chain
+    print("\n" + " =" * 50)
     print("Drafting the report ...")
-    print("="*50)
-
+    print("=" * 50)
+    notify("Drafting the report", "Running writer chain...")
     research_combined = (
         f"SEARCH RESULTS : \n {state['search_results']} \n\n"
         f"DETAILED SCRAPED CONTENT : \n {state['scraped_content']}"
     )
-
     state["report"] = writer_chain.invoke({
-        "topic" : topic,
-        "research" : research_combined
+        "topic": topic,
+        "research": research_combined
     })
+    print("\n Final Report\n", state['report'])
+    notify("Draft report", state['report'])
 
-    print("\n Final Report\n",state['report'])
-
-    #critic report 
-
-    print("\n"+" ="*50)
+    # critic chain
+    print("\n" + " =" * 50)
     print("Critic is reviewing the report")
-    print("="*50)
-
+    print("=" * 50)
+    notify("Critic reviewing report", "Running critic chain...")
     state["feedback"] = critic_chain.invoke({
-        "report":state['report']
+        "report": state['report']
     })
-
     print("\n critic report \n", state['feedback'])
+    notify("Critic feedback", state['feedback'])
 
     return state
-
 
 
 if __name__ == "__main__":
