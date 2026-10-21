@@ -1,4 +1,4 @@
-# Research Console
+# Multi Agent Research system
 
 A multi-agent research pipeline with a live status tracker. Enter a topic and four agents search the web, read a source, write a report, and review it.
 
